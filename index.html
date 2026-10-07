@@ -1,0 +1,307 @@
+```python
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# =====================================================
+# 1. CẤU HÌNH TRANG WEB
+# =====================================================
+
+st.set_page_config(
+    page_title="Quản lý điểm sinh viên",
+    page_icon="🎓",
+    layout="wide"
+)
+
+# =====================================================
+# 2. TIÊU ĐỀ
+# =====================================================
+
+st.title("🎓 QUẢN LÝ ĐIỂM SINH VIÊN")
+
+st.write(
+    "Ứng dụng quản lý điểm và xếp loại của 10 sinh viên."
+)
+
+# =====================================================
+# 3. TẠO DỮ LIỆU 10 SINH VIÊN
+# =====================================================
+
+data = {
+    "Họ tên": [
+        "Nguyễn Văn C",
+        "Nguyễn Văn H",
+        "Nguyễn Văn O",
+        "Nguyễn Văn E",
+        "Nguyễn Văn M",
+        "Nguyễn Văn A",
+        "Nguyễn Văn Đ",
+        "Nguyễn Văn I",
+        "Nguyễn Văn B",
+        "Nguyễn Văn K"
+    ],
+
+    "Chuyên cần": [
+        8, 9, 7, 10, 8,
+        9, 6, 8, 10, 7
+    ],
+
+    "Giữa kỳ": [
+        7, 8, 8, 9, 7,
+        8, 6, 9, 9, 7
+    ],
+
+    "Cuối kỳ": [
+        8, 9, 9, 10, 8,
+        9, 7, 8, 10, 8
+    ]
+}
+
+df = pd.DataFrame(data)
+
+# =====================================================
+# 4. TÍNH ĐIỂM TỔNG KẾT
+# =====================================================
+# Công thức:
+# Tổng kết = 20% Chuyên cần
+#          + 30% Giữa kỳ
+#          + 50% Cuối kỳ
+
+df["Tổng kết"] = (
+    df["Chuyên cần"] * 0.20
+    + df["Giữa kỳ"] * 0.30
+    + df["Cuối kỳ"] * 0.50
+)
+
+# Làm tròn 2 chữ số
+df["Tổng kết"] = df["Tổng kết"].round(2)
+
+# =====================================================
+# 5. XẾP LOẠI
+# =====================================================
+
+def xep_loai(diem):
+    if diem >= 8.5:
+        return "Giỏi"
+    elif diem >= 7.0:
+        return "Khá"
+    elif diem >= 5.0:
+        return "Trung bình"
+    else:
+        return "Không đạt"
+
+
+df["Xếp loại"] = df["Tổng kết"].apply(xep_loai)
+
+# =====================================================
+# 6. HIỂN THỊ BẢNG ĐIỂM
+# =====================================================
+
+st.subheader("📋 BẢNG ĐIỂM 10 SINH VIÊN")
+
+st.dataframe(
+    df,
+    use_container_width=True,
+    hide_index=True
+)
+
+# =====================================================
+# 7. TÍNH CÁC THÔNG TIN THỐNG KÊ
+# =====================================================
+
+diem_trung_binh = df["Tổng kết"].mean()
+
+vi_tri_cao_nhat = df["Tổng kết"].idxmax()
+vi_tri_thap_nhat = df["Tổng kết"].idxmin()
+
+sinh_vien_cao_nhat = df.loc[vi_tri_cao_nhat]
+sinh_vien_thap_nhat = df.loc[vi_tri_thap_nhat]
+
+# Sinh viên đạt: Tổng kết >= 5
+so_sinh_vien_dat = (df["Tổng kết"] >= 5).sum()
+
+# =====================================================
+# 8. THỐNG KÊ
+# =====================================================
+
+st.subheader("📊 THỐNG KÊ KẾT QUẢ")
+
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric(
+        label="Điểm trung bình lớp",
+        value=f"{diem_trung_binh:.2f}"
+    )
+
+with col2:
+    st.metric(
+        label="Điểm cao nhất",
+        value=f"{sinh_vien_cao_nhat['Tổng kết']:.2f}"
+    )
+
+with col3:
+    st.metric(
+        label="Điểm thấp nhất",
+        value=f"{sinh_vien_thap_nhat['Tổng kết']:.2f}"
+    )
+
+with col4:
+    st.metric(
+        label="Số sinh viên đạt",
+        value=f"{so_sinh_vien_dat}/10"
+    )
+
+# =====================================================
+# 9. SINH VIÊN CAO NHẤT VÀ THẤP NHẤT
+# =====================================================
+
+st.write(
+    f"🏆 **Sinh viên có điểm tổng kết cao nhất:** "
+    f"{sinh_vien_cao_nhat['Họ tên']} "
+    f"({sinh_vien_cao_nhat['Tổng kết']:.2f})"
+)
+
+st.write(
+    f"📉 **Sinh viên có điểm tổng kết thấp nhất:** "
+    f"{sinh_vien_thap_nhat['Họ tên']} "
+    f"({sinh_vien_thap_nhat['Tổng kết']:.2f})"
+)
+
+# =====================================================
+# 10. SELECTBOX CHỌN SINH VIÊN
+# =====================================================
+
+st.subheader("🔎 TRA CỨU THÔNG TIN SINH VIÊN")
+
+chon_sinh_vien = st.selectbox(
+    "Chọn một sinh viên:",
+    df["Họ tên"]
+)
+
+# Lấy thông tin sinh viên được chọn
+sinh_vien = df[
+    df["Họ tên"] == chon_sinh_vien
+].iloc[0]
+
+# =====================================================
+# 11. HIỂN THỊ ĐIỂM SINH VIÊN ĐƯỢC CHỌN
+# =====================================================
+
+st.write(
+    f"### 👨‍🎓 Thông tin của {chon_sinh_vien}"
+)
+
+col1, col2, col3, col4, col5 = st.columns(5)
+
+with col1:
+    st.metric(
+        "Chuyên cần",
+        f"{sinh_vien['Chuyên cần']:.2f}"
+    )
+
+with col2:
+    st.metric(
+        "Giữa kỳ",
+        f"{sinh_vien['Giữa kỳ']:.2f}"
+    )
+
+with col3:
+    st.metric(
+        "Cuối kỳ",
+        f"{sinh_vien['Cuối kỳ']:.2f}"
+    )
+
+with col4:
+    st.metric(
+        "Tổng kết",
+        f"{sinh_vien['Tổng kết']:.2f}"
+    )
+
+with col5:
+    st.metric(
+        "Xếp loại",
+        sinh_vien["Xếp loại"]
+    )
+
+# =====================================================
+# 12. BIỂU ĐỒ ĐIỂM TỔNG KẾT
+# =====================================================
+
+st.subheader("📈 BIỂU ĐỒ ĐIỂM TỔNG KẾT")
+
+fig, ax = plt.subplots(figsize=(12, 6))
+
+ax.bar(
+    df["Họ tên"],
+    df["Tổng kết"]
+)
+
+ax.set_title(
+    "ĐIỂM TỔNG KẾT CỦA 10 SINH VIÊN"
+)
+
+ax.set_xlabel("Sinh viên")
+ax.set_ylabel("Điểm tổng kết")
+
+# Giới hạn trục điểm từ 0 đến 10
+ax.set_ylim(0, 10)
+
+# Hiển thị tên sinh viên nghiêng 45 độ
+plt.xticks(
+    rotation=45,
+    ha="right"
+)
+
+# Hiển thị giá trị trên đầu mỗi cột
+for i, diem in enumerate(df["Tổng kết"]):
+    ax.text(
+        i,
+        diem + 0.1,
+        f"{diem:.2f}",
+        ha="center"
+    )
+
+plt.tight_layout()
+
+st.pyplot(fig)
+
+# =====================================================
+# 13. CÔNG THỨC VÀ QUY ĐỊNH XẾP LOẠI
+# =====================================================
+
+st.subheader("📝 CÔNG THỨC TÍNH ĐIỂM")
+
+st.write(
+    "Điểm tổng kết = 20% Chuyên cần + "
+    "30% Giữa kỳ + 50% Cuối kỳ"
+)
+
+st.write("**Quy định xếp loại:**")
+
+st.write("🟢 Giỏi: Điểm tổng kết ≥ 8.5")
+st.write("🔵 Khá: 7.0 ≤ Điểm tổng kết < 8.5")
+st.write("🟡 Trung bình: 5.0 ≤ Điểm tổng kết < 7.0")
+st.write("🔴 Không đạt: Điểm tổng kết < 5.0")
+
+# =====================================================
+# 14. THÔNG TIN NGƯỜI TẠO
+# =====================================================
+
+st.markdown("---")
+
+st.markdown(
+    """
+    <div style="
+        text-align: center;
+        font-size: 12px;
+        color: gray;
+        padding: 10px;
+    ">
+        Người tạo ứng dụng: <b>Nguyễn Trung Hiếu</b><br>
+        MSSV: <b>045208006328</b>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+```
